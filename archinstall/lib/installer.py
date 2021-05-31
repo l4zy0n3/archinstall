@@ -179,7 +179,7 @@ class Installer:
 
 		if (pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists():
 			(pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True)
-			SysCommand(f'/usr/bin/arch-chroot {self.target} ln -s /usr/share/zoneinfo/{zone} /etc/localtime')
+			SysCommand(f'/usr/bin/arch-chroot {self.target} ln -sf /usr/share/zoneinfo/{zone} /etc/localtime')
 			return True
 		else:
 			self.log(
