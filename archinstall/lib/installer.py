@@ -176,6 +176,8 @@ class Installer:
 			return True
 		if not len(zone):
 			return True  # Redundant
+		
+		print(zone)
 
 		if (pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists():
 			(pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True)
