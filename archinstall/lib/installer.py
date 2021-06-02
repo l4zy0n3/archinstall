@@ -177,7 +177,7 @@ class Installer:
 		if not len(zone):
 			return True  # Redundant
 		
-		print(zone)
+		archinstall.log(f'Timezone : {zone}', fg='red')
 
 		if (pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists():
 			(pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True)
