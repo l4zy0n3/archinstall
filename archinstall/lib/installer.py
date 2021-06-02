@@ -4,6 +4,7 @@ from .locale_helpers import verify_keyboard_layout, verify_x11_keyboard_layout
 from .mirrors import *
 from .storage import storage
 from .user_interaction import *
+from .output import log
 
 # Any package that the Installer() is responsible for (optional and the default ones)
 __packages__ = ["base", "base-devel", "linux-firmware", "linux", "linux-lts", "linux-zen", "linux-hardened"]
@@ -177,7 +178,7 @@ class Installer:
 		if not len(zone):
 			return True  # Redundant
 		
-		archinstall.log(f'Timezone : {zone}', fg='red')
+		log(f'Timezone : {zone}', fg='red')
 
 		if (pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists():
 			(pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True)
