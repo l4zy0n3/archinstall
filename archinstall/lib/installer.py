@@ -179,7 +179,10 @@ class Installer:
 			return True  # Redundant
 		
 		log(f'Timezone : {zone}', fg='red')
-
+		log((pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists(), fg='red')
+		log((pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True), fg='red')
+		log(SysCommand(f'/usr/bin/arch-chroot {self.target} ln -s /usr/share/zoneinfo/{zone} /etc/localtime'), fg='red')
+		
 		if (pathlib.Path("/usr") / "share" / "zoneinfo" / zone).exists():
 			(pathlib.Path(self.target) / "etc" / "localtime").unlink(missing_ok=True)
 			SysCommand(f'/usr/bin/arch-chroot {self.target} ln -s /usr/share/zoneinfo/{zone} /etc/localtime')
