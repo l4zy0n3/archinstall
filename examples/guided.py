@@ -202,7 +202,8 @@ def ask_user_questions():
 		archinstall.arguments['profile'] = archinstall.select_profile()
 	else:
 		archinstall.arguments['profile'] = Profile(installer=None, path=archinstall.arguments['profile'])
-
+	print(archinstall.arguments['profile'])
+		
 	# Check the potentially selected profiles preparations to get early checks if some additional questions are needed.
 	if archinstall.arguments['profile'] and archinstall.arguments['profile'].has_prep_function():
 		with archinstall.arguments['profile'].load_instructions(namespace=f"{archinstall.arguments['profile'].namespace}.py") as imported:
