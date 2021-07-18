@@ -202,7 +202,6 @@ def ask_user_questions():
 		archinstall.arguments['profile'] = archinstall.select_profile()
 	else:
 		archinstall.arguments['profile'] = Profile(installer=None, path=archinstall.arguments['profile'])
-	print(archinstall.arguments['profile'])
 		
 	# Check the potentially selected profiles preparations to get early checks if some additional questions are needed.
 	if archinstall.arguments['profile'] and archinstall.arguments['profile'].has_prep_function():
@@ -456,6 +455,8 @@ else:
 			archinstall.arguments['profile'] = archinstall.Profile(None, archinstall.arguments.get('profile', None))
 	else:
 		archinstall.arguments['profile'] = None
+	if archinstall.arguments['profile'] == 'Profile(desktop)' and '_desktop_profile' not in archinstall.storage.keys():
+		archinstall.storage['_desktop_profile'] = archinstall.arguments.get('desktop-environment', None)
 	if archinstall.arguments.get('mirror-region', None) is not None:
 		if type(archinstall.arguments.get('mirror-region', None)) is dict:
 			archinstall.arguments['mirror-region'] = archinstall.arguments.get('mirror-region', None)
