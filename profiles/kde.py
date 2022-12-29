@@ -7,11 +7,12 @@ is_top_level_profile = False
 __packages__ = [
 	"plasma-meta",
 	"konsole",
-	"kate",
+	"kwrite",
 	"dolphin",
+	"ark",
 	"sddm",
 	"plasma-wayland-session",
-	"egl-wayland",
+	"egl-wayland"
 ]
 
 

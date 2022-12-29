@@ -7,9 +7,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 def process_docstring(app, what, name, obj, options, lines):
 	spaces_pat = re.compile(r"( {8})")
-	ll = []
-	for line in lines:
-		ll.append(spaces_pat.sub("    ", line))
+	ll = [spaces_pat.sub("    ", line) for line in lines]
 	lines[:] = ll
 
 
@@ -37,11 +35,11 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 
 project = 'python-archinstall'
-copyright = '2020, Anton Hvornum'
+copyright = '2022, Anton Hvornum'
 author = 'Anton Hvornum'
 
 # The full version, including alpha/beta/rc tags
-release = 'v2.3.0.dev0'
+release = 'v2.3.0'
 
 # -- General configuration ---------------------------------------------------
 

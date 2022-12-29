@@ -1,6 +1,8 @@
 import archinstall
 
 # Select a harddrive and a disk password
+from archinstall import User
+
 archinstall.log("Minimal only supports:")
 archinstall.log(" * Being installed to a single disk")
 
@@ -9,7 +11,7 @@ if archinstall.arguments.get('help', None):
 	archinstall.log(" - Optional filesystem type via --filesystem=<fs type>")
 	archinstall.log(" - Optional systemd network via --network")
 
-archinstall.arguments['harddrive'] = archinstall.select_disk(archinstall.all_disks())
+archinstall.arguments['harddrive'] = archinstall.select_disk(archinstall.all_blockdevices())
 
 
 def install_on(mountpoint):
@@ -28,8 +30,8 @@ def install_on(mountpoint):
 			installation.add_additional_packages(['nano', 'wget', 'git'])
 			installation.install_profile('minimal')
 
-			installation.user_create('devel', 'devel')
-			installation.user_set_pw('root', 'airoot')
+			user = User('devel', 'devel', False)
+			installation.create_users(user)
 
 	# Once this is done, we output some useful information to the user
 	# And the installation is complete.
@@ -53,7 +55,7 @@ if archinstall.arguments['harddrive']:
 		boot = fs.find_partition('/boot')
 		root = fs.find_partition('/')
 
-		boot.format('vfat')
+		boot.format('fat32')
 
 		# We encrypt the root partition if we got a password to do so with,
 		# Otherwise we just skip straight to formatting and installation

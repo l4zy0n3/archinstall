@@ -1,12 +1,18 @@
 # Used to select various server application profiles on top of a minimal installation.
 
 import logging
+from typing import Any, TYPE_CHECKING
 
 import archinstall
+from archinstall import Menu
+from archinstall.lib.menu.menu import MenuSelectionType
+
+if TYPE_CHECKING:
+	_: Any
 
 is_top_level_profile = True
 
-__description__ = 'Provides a selection of various server packages to install and enable, e.g. httpd, nginx, mariadb'
+__description__ = str(_('Provides a selection of various server packages to install and enable, e.g. httpd, nginx, mariadb'))
 
 available_servers = [
 	"cockpit",
@@ -26,10 +32,21 @@ def _prep_function(*args, **kwargs):
 	Magic function called by the importing installer
 	before continuing any further.
 	"""
-	selected_servers = archinstall.generic_multi_select(available_servers, "Choose which servers to install and enable (leave blank for a minimal installation): ")
-	archinstall.storage['_selected_servers'] = selected_servers
+	choice = Menu(str(_(
+		'Choose which servers to install, if none then a minimal installation will be done')),
+		available_servers,
+		preset_values=kwargs['servers'],
+		multi=True
+	).run()
 
-	return True
+	if choice.type_ != MenuSelectionType.Selection:
+		return False
+
+	if choice.value:
+		archinstall.storage['_selected_servers'] = choice.value
+		return True
+
+	return False
 
 
 if __name__ == 'server':

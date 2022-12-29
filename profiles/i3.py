@@ -1,6 +1,8 @@
 # Common package for i3, lets user select which i3 configuration they want.
 
 import archinstall
+from archinstall import Menu
+from archinstall.lib.menu.menu import MenuSelectionType
 
 is_top_level_profile = False
 
@@ -26,20 +28,27 @@ def _prep_function(*args, **kwargs):
 	"""
 
 	supported_configurations = ['i3-wm', 'i3-gaps']
-	desktop = archinstall.generic_select(supported_configurations, 'Select your desired configuration: ', allow_empty_input=False, sort=True)
 
-	# Temporarily store the selected desktop profile
-	# in a session-safe location, since this module will get reloaded
-	# the next time it gets executed.
-	archinstall.storage['_i3_configuration'] = desktop
+	choice = Menu('Select your desired configuration', supported_configurations).run()
 
-	# i3 requires a functioning Xorg installation.
-	profile = archinstall.Profile(None, 'xorg')
-	with profile.load_instructions(namespace='xorg.py') as imported:
-		if hasattr(imported, '_prep_function'):
-			return imported._prep_function()
-		else:
-			print('Deprecated (??): xorg profile has no _prep_function() anymore')
+	if choice.type_ != MenuSelectionType.Selection:
+		return False
+
+	if choice.value:
+		# Temporarily store the selected desktop profile
+		# in a session-safe location, since this module will get reloaded
+		# the next time it gets executed.
+		archinstall.storage['_i3_configuration'] = choice.value
+
+		# i3 requires a functioning Xorg installation.
+		profile = archinstall.Profile(None, 'xorg')
+		with profile.load_instructions(namespace='xorg.py') as imported:
+			if hasattr(imported, '_prep_function'):
+				return imported._prep_function()
+			else:
+				print('Deprecated (??): xorg profile has no _prep_function() anymore')
+
+	return False
 
 
 if __name__ == 'i3':

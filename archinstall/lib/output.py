@@ -1,50 +1,95 @@
-import abc
 import logging
 import os
 import sys
 from pathlib import Path
+from typing import Dict, Union, List, Any, Callable
 
 from .storage import storage
+from dataclasses import asdict, is_dataclass
 
 
-# TODO: use logging's built in levels instead.
-#       Although logging is threaded and I wish to avoid that.
-#       It's more Pythonistic or w/e you want to call it.
-class LogLevels:
-	Critical = 0b001
-	Error = 0b010
-	Warning = 0b011
-	Info = 0b101
-	Debug = 0b111
+class FormattedOutput:
+
+	@classmethod
+	def values(cls, o: Any, class_formatter: str = None, filter_list: List[str] = None) -> Dict[str, Any]:
+		""" the original values returned a dataclass as dict thru the call to some specific methods
+		this version allows thru the parameter class_formatter to call a dynamicly selected formatting method.
+		Can transmit a filter list to the class_formatter,
+		"""
+		if class_formatter:
+			# if invoked per reference it has to be a standard function or a classmethod.
+			# A method of an instance does not make sense
+			if callable(class_formatter):
+				return class_formatter(o, filter_list)
+			# if is invoked by name we restrict it to a method of the class. No need to mess more
+			elif hasattr(o, class_formatter) and callable(getattr(o, class_formatter)):
+				func = getattr(o, class_formatter)
+				return func(filter_list)
+		# kept as to make it backward compatible
+		elif hasattr(o, 'as_json'):
+			return o.as_json()
+		elif hasattr(o, 'json'):
+			return o.json()
+		elif is_dataclass(o):
+			return asdict(o)
+		else:
+			return o.__dict__
+
+	@classmethod
+	def as_table(cls, obj: List[Any], class_formatter: Union[str, Callable] = None, filter_list: List[str] = None) -> str:
+		""" variant of as_table (subtly different code) which has two additional parameters
+		filter which is a list of fields which will be shon
+		class_formatter a special method to format the outgoing data
+
+		A general comment, the format selected for the output (a string where every data record is separated by newline)
+		is for compatibility with a print statement
+		As_table_filter can be a drop in replacement for as_table
+		"""
+		raw_data = [cls.values(o, class_formatter, filter_list) for o in obj]
+		# determine the maximum column size
+		column_width: Dict[str, int] = {}
+		for o in raw_data:
+			for k, v in o.items():
+				if not filter_list or k in filter_list:
+					column_width.setdefault(k, 0)
+					column_width[k] = max([column_width[k], len(str(v)), len(k)])
+
+		if not filter_list:
+			filter_list = (column_width.keys())
+		# create the header lines
+		output = ''
+		key_list = []
+		for key in filter_list:
+			width = column_width[key]
+			key = key.replace('!', '')
+			key_list.append(key.ljust(width))
+		output += ' | '.join(key_list) + '\n'
+		output += '-' * len(output) + '\n'
+
+		# create the data lines
+		for record in raw_data:
+			obj_data = []
+			for key in filter_list:
+				width = column_width.get(key, len(key))
+				value = record.get(key, '')
+				if '!' in key:
+					value = '*' * width
+				if isinstance(value,(int, float)) or (isinstance(value, str) and value.isnumeric()):
+					obj_data.append(str(value).rjust(width))
+				else:
+					obj_data.append(str(value).ljust(width))
+			output += ' | '.join(obj_data) + '\n'
+
+		return output
 
 
-class Journald(dict):
-	@abc.abstractmethod
-	def log(message, level=logging.DEBUG):
+class Journald:
+	@staticmethod
+	def log(message :str, level :int = logging.DEBUG) -> None:
 		try:
 			import systemd.journal  # type: ignore
 		except ModuleNotFoundError:
-			return False
-
-		# For backwards compatibility, convert old style log-levels
-		# to logging levels (and warn about deprecated usage)
-		# There's some code re-usage here but that should be fine.
-		# TODO: Remove these in a few versions:
-		if level == LogLevels.Critical:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			level = logging.CRITICAL
-		elif level == LogLevels.Error:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			level = logging.ERROR
-		elif level == LogLevels.Warning:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			level = logging.WARNING
-		elif level == LogLevels.Info:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			level = logging.INFO
-		elif level == LogLevels.Debug:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			level = logging.DEBUG
+			return None
 
 		log_adapter = logging.getLogger('archinstall')
 		log_fmt = logging.Formatter("[%(levelname)s]: %(message)s")
@@ -64,7 +109,7 @@ class SessionLogging:
 
 # Found first reference here: https://stackoverflow.com/questions/7445658/how-to-detect-if-the-console-does-support-ansi-escape-codes-in-python
 # And re-used this: https://github.com/django/django/blob/master/django/core/management/color.py#L12
-def supports_color():
+def supports_color() -> bool:
 	"""
 	Return True if the running system's terminal supports color,
 	and False otherwise.
@@ -78,30 +123,53 @@ def supports_color():
 
 # Heavily influenced by: https://github.com/django/django/blob/ae8338daf34fd746771e0678081999b656177bae/django/utils/termcolors.py#L13
 # Color options here: https://askubuntu.com/questions/528928/how-to-do-underline-bold-italic-strikethrough-color-background-and-size-i
-def stylize_output(text: str, *opts, **kwargs):
+def stylize_output(text: str, *opts :str, **kwargs) -> str:
+	"""
+	Adds styling to a text given a set of color arguments.
+	"""
 	opt_dict = {'bold': '1', 'italic': '3', 'underscore': '4', 'blink': '5', 'reverse': '7', 'conceal': '8'}
-	color_names = ('black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white')
-	foreground = {color_names[x]: '3%s' % x for x in range(8)}
-	background = {color_names[x]: '4%s' % x for x in range(8)}
+	colors = {
+		'black' : '0',
+		'red' : '1',
+		'green' : '2',
+		'yellow' : '3',
+		'blue' : '4',
+		'magenta' : '5',
+		'cyan' : '6',
+		'white' : '7',
+		'teal' : '8;5;109',      # Extended 256-bit colors (not always supported)
+		'orange' : '8;5;208',    # https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html#256-colors
+		'darkorange' : '8;5;202',
+		'gray' : '8;5;246',
+		'grey' : '8;5;246',
+		'darkgray' : '8;5;240',
+		'lightgray' : '8;5;256'
+	}
+	foreground = {key: f'3{colors[key]}' for key in colors}
+	background = {key: f'4{colors[key]}' for key in colors}
 	reset = '0'
 
 	code_list = []
 	if text == '' and len(opts) == 1 and opts[0] == 'reset':
 		return '\x1b[%sm' % reset
+
 	for k, v in kwargs.items():
 		if k == 'fg':
-			code_list.append(foreground[v])
+			code_list.append(foreground[str(v)])
 		elif k == 'bg':
-			code_list.append(background[v])
+			code_list.append(background[str(v)])
+
 	for o in opts:
 		if o in opt_dict:
 			code_list.append(opt_dict[o])
+
 	if 'noreset' not in opts:
 		text = '%s\x1b[%sm' % (text or '', reset)
+
 	return '%s%s' % (('\x1b[%sm' % ';'.join(code_list)), text or '')
 
 
-def log(*args, **kwargs):
+def log(*args :str, **kwargs :Union[str, int, Dict[str, Union[str, int]]]) -> None:
 	string = orig_string = ' '.join([str(x) for x in args])
 
 	# Attempt to colorize the output if supported
@@ -131,42 +199,11 @@ def log(*args, **kwargs):
 		with open(absolute_logfile, 'a') as log_file:
 			log_file.write(f"{orig_string}\n")
 
-	# If we assigned a level, try to log it to systemd's journald.
-	# Unless the level is higher than we've decided to output interactively.
-	# (Remember, log files still get *ALL* the output despite level restrictions)
-	if 'level' in kwargs:
-		# For backwards compatibility, convert old style log-levels
-		# to logging levels (and warn about deprecated usage)
-		# There's some code re-usage here but that should be fine.
-		# TODO: Remove these in a few versions:
-		if kwargs['level'] == LogLevels.Critical:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			kwargs['level'] = logging.CRITICAL
-		elif kwargs['level'] == LogLevels.Error:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			kwargs['level'] = logging.ERROR
-		elif kwargs['level'] == LogLevels.Warning:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			kwargs['level'] = logging.WARNING
-		elif kwargs['level'] == LogLevels.Info:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			kwargs['level'] = logging.INFO
-		elif kwargs['level'] == LogLevels.Debug:
-			log("Deprecated level detected in log message, please use new logging.<level> instead for the following log message:", fg="red", level=logging.ERROR, force=True)
-			kwargs['level'] = logging.DEBUG
-
-		if kwargs['level'] < storage.get('LOG_LEVEL', logging.INFO) and 'force' not in kwargs:
-			# Level on log message was Debug, but output level is set to Info.
-			# In that case, we'll drop it.
-			return None
-
-	try:
-		Journald.log(string, level=kwargs.get('level', logging.INFO))
-	except ModuleNotFoundError:
-		pass  # Ignore writing to journald
+	Journald.log(string, level=int(str(kwargs.get('level', logging.INFO))))
 
 	# Finally, print the log unless we skipped it based on level.
 	# We use sys.stdout.write()+flush() instead of print() to try and
 	# fix issue #94
-	sys.stdout.write(f"{string}\n")
-	sys.stdout.flush()
+	if kwargs.get('level', logging.INFO) != logging.DEBUG or storage['arguments'].get('verbose', False):
+		sys.stdout.write(f"{string}\n")
+		sys.stdout.flush()

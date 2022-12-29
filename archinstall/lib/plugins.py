@@ -7,6 +7,8 @@ import pathlib
 import urllib.parse
 import urllib.request
 from importlib import metadata
+from typing import Optional, List
+from types import ModuleType
 
 from .output import log
 from .storage import storage
@@ -16,7 +18,7 @@ plugins = {}
 # 1: List archinstall.plugin definitions
 # 2: Load the plugin entrypoint
 # 3: Initiate the plugin and store it as .name in plugins
-for plugin_definition in metadata.entry_points().get('archinstall.plugin', []):
+for plugin_definition in metadata.entry_points().select(group='archinstall.plugin'):
 	plugin_entrypoint = plugin_definition.load()
 	try:
 		plugins[plugin_definition.name] = plugin_entrypoint()
@@ -38,7 +40,7 @@ def localize_path(profile_path :str) -> str:
 		return profile_path
 
 
-def import_via_path(path :str, namespace=None): # -> module (not sure how to write that in type definitions)
+def import_via_path(path :str, namespace :Optional[str] = None) -> ModuleType:
 	if not namespace:
 		namespace = os.path.basename(path)
 
@@ -58,19 +60,20 @@ def import_via_path(path :str, namespace=None): # -> module (not sure how to wri
 		log(f"The above error was detected when loading the plugin: {path}", fg="red", level=logging.ERROR)
 
 		try:
-			del(sys.modules[namespace])
+			del(sys.modules[namespace]) # noqa: E275
 		except:
 			pass
 
-def find_nth(haystack, needle, n):
+def find_nth(haystack :List[str], needle :str, n :int) -> int:
 	start = haystack.find(needle)
 	while start >= 0 and n > 1:
-		start = haystack.find(needle, start+len(needle))
+		start = haystack.find(needle, start + len(needle))
 		n -= 1
 	return start
 
-def load_plugin(path :str): # -> module (not sure how to write that in type definitions)
+def load_plugin(path :str) -> ModuleType:
 	parsed_url = urllib.parse.urlparse(path)
+	log(f"Loading plugin {parsed_url}.", fg="gray", level=logging.INFO)
 
 	# The Profile was not a direct match on a remote URL
 	if not parsed_url.scheme:
@@ -94,6 +97,7 @@ def load_plugin(path :str): # -> module (not sure how to write that in type defi
 		if hasattr(sys.modules[namespace], 'Plugin'):
 			try:
 				plugins[namespace] = sys.modules[namespace].Plugin()
+				log(f"Plugin {plugins[namespace]} has been loaded.", fg="gray", level=logging.INFO)
 			except Exception as err:
 				log(err, level=logging.ERROR)
 				log(f"The above error was detected when initiating the plugin: {path}", fg="red", level=logging.ERROR)

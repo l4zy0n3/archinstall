@@ -1,8 +1,7 @@
 # Contributing to archinstall
 
 Any contributions through pull requests are welcome as this project aims to be a community based project to ease some Arch Linux installation steps.
-Bear in mind that in the future this repo might be transferred to the official [GitLab repo under Arch Linux](http://gitlab.archlinux.org/archlinux/) 
-  *(if GitLab becomes open to the general public)*.
+Bear in mind that in the future this repo might be transferred to the official [GitLab repo under Arch Linux](http://gitlab.archlinux.org/archlinux/) *(if GitLab becomes open to the general public)*.
 
 Therefore, guidelines and style changes to the code might come into effect as well as guidelines surrounding bug reporting and discussions.
 
@@ -17,7 +16,7 @@ Patch releases will be done against their own branches, branched from stable tag
 ## Discussions
 
 Currently, questions, bugs and suggestions should be reported through [GitHub issue tracker](https://github.com/archlinux/archinstall/issues).<br>
-For less formal discussions there are also a [archinstall Discord server](https://discord.gg/cqXU88y).
+For less formal discussions there is also an [archinstall Discord server](https://discord.gg/cqXU88y).
 
 ## Coding convention
 
@@ -31,7 +30,7 @@ The exceptions to PEP8 are:
 * [Line length](https://www.python.org/dev/peps/pep-0008/#maximum-line-length) should aim for no more than 100
   characters, but not strictly enforced.
 * [Line breaks before/after binary operator](https://www.python.org/dev/peps/pep-0008/#should-a-line-break-before-or-after-a-binary-operator)
-  is not enforced, as long as the style of line breaks are consistent within the same code block.
+  is not enforced, as long as the style of line breaks is consistent within the same code block.
 * Archinstall should always be saved with **Unix-formatted line endings** and no other platform-specific formats.
 * [String quotes](https://www.python.org/dev/peps/pep-0008/#string-quotes) follow PEP8, the exception being when
   creating formatted strings, double-quoted strings are *preferred* but not required on the outer edges *(
@@ -39,6 +38,10 @@ The exceptions to PEP8 are:
 
 Most of these style guidelines have been put into place after the fact *(in an attempt to clean up the code)*.<br>
 There might therefore be older code which does not follow the coding convention and the code is subject to change.
+
+## Documentation
+
+If you'd like to contribute to the documentation, refer to [this guide](docs/README.md) on how to build the documentation locally.
 
 ## Submitting Changes
 

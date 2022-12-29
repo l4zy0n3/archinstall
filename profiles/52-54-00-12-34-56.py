@@ -15,7 +15,7 @@ archinstall.sys_command(f'umount -R /mnt', suppress_errors=True)
 archinstall.sys_command(f'cryptsetup close /dev/mapper/luksloop', suppress_errors=True)
 
 # Select a harddrive and a disk password
-harddrive = archinstall.all_disks()['/dev/sda']
+harddrive = archinstall.all_blockdevices()['/dev/sda']
 disk_password = '1234'
 
 with archinstall.Filesystem(harddrive) as fs:
@@ -40,7 +40,8 @@ with archinstall.Filesystem(harddrive) as fs:
 				installation.add_additional_packages(__packages__)
 				installation.install_profile('awesome')
 
-				installation.user_create('devel', 'devel')
+				user = User('devel', 'devel', False)
+				installation.create_users(user)
 				installation.user_set_pw('root', 'toor')
 
 				print(f'Submitting {archinstall.__version__}: success')
